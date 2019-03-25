@@ -15,7 +15,7 @@ class Scraper:
     """
     Grabs and processes data obtained from the web to be used with the Markov chain generator later.
     """
-    def __init__(self, url,fmt='lxml'):
+    def __init__(self, url, fmt='lxml'):
         source = requests.get(url).text        # downloads the webpage html as plaintext
         self.soup = BeautifulSoup(source, fmt) # loads the lxml parser
         # TODO: Make the scraping method and `fmt' depend on the domain name of the site in question
@@ -40,12 +40,14 @@ class Markov:
     """
     Produces Markov chain lyrics from data obtained from the scraper.
     """
-    def __init__(self,url):
+    def __init__(self, url, n_words=30, to_print=True):
         self.scraper = Scraper(url)
+        self.n_words = n_words
         self.pairs = self.make_pairs(self.scraper.words)
         self.word_dict = self.form_dict()
         self.generated = self.generate()
-        print(self.generated)
+        if to_print:
+            print(self.generated)
 
     def make_pairs(self,words):
         """
@@ -72,16 +74,15 @@ class Markov:
 
         chain = [first_word]
 
-        n_words = 30 # the number of words the chain will be in length
-
-        for i in range(n_words):
-            chain.append(np.random.choice(self.word_dict[chain[-1]])) # add 30 random words from the dictonary, the next word is chosen based on the last element or word in the chain.
+        for i in range(self.n_words):
+            chain.append(np.random.choice(self.word_dict[chain[-1]]))
 
         return ' '.join(chain) # joins the words in the list made in the generated chain of words in to a string, with all the words connected by a space
 
 def main():
     plato = Markov('https://en.wikipedia.org/wiki/Platonism')
-    quit()
+    # TODO: Interactively allow further generated chains to be created before completely exiting
+    # (so data doesn't have to be re-downloaded multiple times for the same set)
 
 if __name__ == '__main__':
     main()
