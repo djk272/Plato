@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """
-Random music verse generator formed from an excerpt of Plato's metaphysics, found on Wikipedia
+Random music verse generator originally formed from an excerpt of Plato's metaphysics found on Wikipedia
 
 Author: djk272
 Modified by fullsalvo
 """
 
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from bs4 import BeautifulSoup # Python3 Web Scraper
-import requests
 import numpy as np
 import pandas as pd
+import re
+import requests
+
+# create a global variable to be used later as the argument handling object
+_args = None
 
 class Scraper:
     """
@@ -21,6 +26,8 @@ class Scraper:
         # TODO: Make the scraping method and `fmt' depend on the domain name of the site in question
         if (url == 'https://en.wikipedia.org/wiki/Platonism'):
             self.words = self.plato()
+        if (url.startswith('https://genius.com/')):
+            self.words = self.genius()
 
     def plato(self):
         """
@@ -34,6 +41,13 @@ class Scraper:
         glaucon = glaucon.replace("\"","").replace("?", "").replace(",", "").replace(".","").replace("-","")
         # split the string of text into a list of individual words
         words = glaucon.split()
+        return words
+
+    def genius(self):
+        lyrics = self.soup.p.get_text()
+        section_headers = r'\[[^\]]*\]\n'
+        lyrics = re.sub(section_headers, '', lyrics)
+        words = lyrics.split()
         return words
 
 class Markov:
@@ -79,8 +93,30 @@ class Markov:
 
         return ' '.join(chain) # joins the words in the list made in the generated chain of words in to a string, with all the words connected by a space
 
+def _parse_args():
+    parser = ArgumentParser(
+        description=__doc__,
+        formatter_class=RawDescriptionHelpFormatter
+    )
+    parser.add_argument('-n','--wordcount',
+                        help="""
+                        The number of words to form the chain from.
+                        """,
+                        dest='words',
+                        type=int,
+                        default=30)
+    parser.add_argument('url',
+                        nargs='?',
+                        help="""
+                        The url scraped to be used by the Markov chain generator.
+                        """,
+                        type=str,
+                        default="https://en.wikipedia.org/wiki/Platonism")
+    return parser.parse_args()
+
 def main():
-    plato = Markov('https://en.wikipedia.org/wiki/Platonism')
+    _args = _parse_args()
+    plato = Markov(_args.url,n_words=_args.words)
     # TODO: Interactively allow further generated chains to be created before completely exiting
     # (so data doesn't have to be re-downloaded multiple times for the same set)
 
